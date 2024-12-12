@@ -8,12 +8,12 @@ import web3_utils
 
 approval_event_signature = "0x" + Web3.keccak(text="Approval(address,address,uint256)").hex()
 
-def get_padded_address_from_arg() -> hex:
+def get_address_from_arg() -> hex:
     parser = argparse.ArgumentParser()
     parser.add_argument("--address", required=True)
     args = parser.parse_args()
     address:hex = args.address
-    return web3_utils.encode_address_to_32bytes(address)
+    return address
 
 def is_valid_data(log_data: str) -> bool:
     try:
@@ -54,10 +54,10 @@ def get_most_recent_approvals(logs: List[Dict[str, Any]]) -> List[Dict[str, Any]
     return list(latest_logs.values())
 
 
-async def main():
-    padded_address = get_padded_address_from_arg()
+async def get_address_approvals(owner: str):
+    padded_owner = web3_utils.encode_address_to_32bytes(owner)
 
-    filtered_logs = await web3_utils.get_all_logs_of_an_event_signature_of_address(approval_event_signature, padded_address)
+    filtered_logs = await web3_utils.get_all_logs_of_an_event_signature_of_address(approval_event_signature, padded_owner)
 
     contracts_addresses_set = set(log["address"] for log in filtered_logs)
 
@@ -71,4 +71,5 @@ async def main():
     
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    arg_address = get_address_from_arg()
+    asyncio.run(get_address_approvals(arg_address))
