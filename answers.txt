@@ -1,0 +1,4 @@
+1. approval - One of the ERC-20 events, representing a successful approve call -
+    a permission that a first address (=owner) grants to another address (=spender) to spend a certain amount of tokens of the former.
+2. transfer and transferFrom - "trasnfer" transfers X tokens (one of the arguments) to address B (another arguemnt) from the *executing* address.
+On the other hand, "transferFrom" is when a third party (to the transaction, the "spender") transfers X tokens from address A (the owner) to address B, after A approved the spender to spend an amount.
