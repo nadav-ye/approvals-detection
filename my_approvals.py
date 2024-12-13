@@ -61,15 +61,20 @@ async def get_address_approvals(owner: str):
 
     contracts_addresses_set = set(log["address"] for log in filtered_logs)
 
-    contract_name_map = await web3_utils.fetch_contract_names(contracts_addresses_set)
+    await web3_utils.fetch_contract_names(contracts_addresses_set)
 
     latest_approvals:List[Dict[str, Any]] = get_most_recent_approvals(filtered_logs)
 
+    return latest_approvals
+
+
+def print_latest_approvals(latest_approvals:List[Dict[str, Any]]) -> None:
     for log in latest_approvals:
         amount = int(log["data"].hex(), 16)
-        print(f"approval on {contract_name_map[log['address']]} on amount of {amount}")
-    
+        print(f"approval on {web3_utils.contract_name_map[log['address']]} on amount of {amount}")
+
 
 if __name__ == "__main__":
     arg_address = get_address_from_arg()
-    asyncio.run(get_address_approvals(arg_address))
+    latest_approvals = asyncio.run(get_address_approvals(arg_address))
+    print_latest_approvals(latest_approvals)

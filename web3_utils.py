@@ -6,8 +6,11 @@ import asyncio
 
 infura_api_key = "ee139a7e573e401c968e84cb8d8342a6"
 w3 = AsyncWeb3(AsyncWeb3.AsyncHTTPProvider(f'https://mainnet.infura.io/v3/{infura_api_key}'))
+
 with open("erc20_basic_abi.json") as abi:
     erc20_abi = json.load(abi)
+
+contract_name_map:Dict = dict()
 
 def get_async_client() -> AsyncWeb3:
     return w3
@@ -33,8 +36,7 @@ def get_erc20_contract(contract_address: str) -> AsyncContract:
 async def get_contract_name(contract: AsyncContract) -> str:
     return await contract.functions.name().call()
 
-async def fetch_contract_names(contract_addresses: Set[str]) -> Dict[str, str]:
-    contract_name_map = {}
+async def fetch_contract_names(contract_addresses: Set[str]) -> None:
     
     async def fetch_name(address: str):
         try:
@@ -44,7 +46,6 @@ async def fetch_contract_names(contract_addresses: Set[str]) -> Dict[str, str]:
         except Exception as e:
             contract_name_map[address] = address  # fallback - name isn't mandatory on
 
-    tasks = [fetch_name(address) for address in contract_addresses]
+    addresses_for_name_request = contract_addresses - contract_name_map.keys()
+    tasks = [fetch_name(address) for address in addresses_for_name_request]
     await asyncio.gather(*tasks)
-    
-    return contract_name_map
