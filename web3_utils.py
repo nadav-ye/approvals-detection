@@ -1,6 +1,6 @@
 from web3 import AsyncWeb3
 from web3.contract.async_contract import AsyncContract
-from typing import Set, Dict
+from typing import Set, Dict, Any
 import json
 import asyncio
 
@@ -12,13 +12,15 @@ with open("erc20_basic_abi.json") as abi:
 
 contract_name_map:Dict = dict()
 
-def get_async_client() -> AsyncWeb3:
-    return w3
 
 def encode_address_to_32bytes(address: str) -> str:
     address_bytes = bytes.fromhex(address[2:])
     padded = address_bytes.rjust(32, b'\0')
     return '0x' + padded.hex()
+
+def get_erc20_spender(log: Dict[str, Any]) -> str:
+    spender_topic = log["topics"][2]
+    return "0x" + spender_topic.hex()[26:]  # represented 20 bytes
 
 async def get_all_logs_of_an_event_signature_of_address(event_signature:str, from_address: str):
     approval_filter = await w3.eth.filter({

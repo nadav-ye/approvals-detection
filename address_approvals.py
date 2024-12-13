@@ -24,8 +24,7 @@ def get_most_recent_approvals(logs: List[Dict[str, Any]]) -> List[Dict[str, Any]
     for log in logs:
         try:
             token = log["address"].lower()
-            spender_topic = log["topics"][2] # spender topic
-            spender = "0x" + spender_topic.hex()[26:]  # represented 20 bytes
+            spender = web3_utils.get_erc20_spender(log)
             block_number = log.get("blockNumber", 0)
             log_index = log.get("logIndex", 0)
             
