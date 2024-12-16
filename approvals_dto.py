@@ -6,7 +6,7 @@ import web3_utils
 class ApprovalDTO(BaseModel):
     token_name: str
     token_address: str
-    price: str | None = None
+    price: Dict | None = None
     spender: str
     amount: int
 
