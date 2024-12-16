@@ -11,6 +11,9 @@ class ApprovalDTO(BaseModel):
     amount: int
 
 def approval_dto_from_log(approval_log: Dict[str, Any]) -> ApprovalDTO:
+    """
+    given an approval log, creates a DTO respresnting it
+    """
     approval_dto = ApprovalDTO(
         token_name=web3_utils.contract_name_map[approval_log["address"]],
         token_address=approval_log["address"].lower(),

@@ -1,9 +1,14 @@
+from typing import Dict, List, Any
+from fastapi import HTTPException
+
 import httpx
 import logging
-from fastapi import HTTPException
-from typing import Dict, List, Any
+
 
 class PriceEnricher():
+    """
+    Enricher for contracts prices
+    """
     def __init__(self):
         self.__template_enrich_url:str = "https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses={}&vs_currencies=usd"
         self.__gecko_headers:Dict = dict({"x-cg-demo-api-key":"CG-JpTpQR8qC3H8BNFca9Y363px"})
@@ -11,11 +16,17 @@ class PriceEnricher():
     _price_map: Dict = dict()
 
     def _prepare_gecko_request(self, missing_addresses: List[str]) -> str:
+        """
+        given a list of missing addresses prices, perpare a request for gecko API
+        """
         con_addresses = ",".join(missing_addresses)
         logging.error(f"url: {self.__template_enrich_url.format(con_addresses)}")
         return self.__template_enrich_url.format(con_addresses)
 
     async def _fetch_tokens_prices(self, token_addresses: List[str]):
+        """
+        fetches tokens prices from gecko
+        """
         request_url = self._prepare_gecko_request(token_addresses)
         async with httpx.AsyncClient() as client:
             try:
@@ -34,6 +45,9 @@ class PriceEnricher():
                 )
 
     async def get_tokens_prices(self, token_addresses: List[str]) -> Dict[str, Dict[str, Any]]:
+        """
+        given a lost of token addresses, returns their prices (if exist), enriching from gecko if needed
+        """
         missing_tokens: List[str] = []
         for token_address in token_addresses:
             if token_address not in self._price_map.keys():

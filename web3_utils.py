@@ -4,6 +4,7 @@ from typing import Set, Dict, Any
 import json
 import asyncio
 
+
 infura_api_key = "ee139a7e573e401c968e84cb8d8342a6"
 w3 = AsyncWeb3(AsyncWeb3.AsyncHTTPProvider(f'https://mainnet.infura.io/v3/{infura_api_key}'))
 
@@ -14,15 +15,24 @@ contract_name_map:Dict = dict()
 
 
 def encode_address_to_32bytes(address: str) -> str:
+    """
+    padding address to 32 bytes
+    """
     address_bytes = bytes.fromhex(address[2:])
     padded = address_bytes.rjust(32, b'\0')
     return '0x' + padded.hex()
 
 def get_erc20_spender(log: Dict[str, Any]) -> str:
+    """
+    given an erc20 approval log, returns the spender address
+    """
     spender_topic = log["topics"][2]
     return "0x" + spender_topic.hex()[26:]  # represented 20 bytes
 
 async def get_all_logs_of_an_event_signature_of_address(event_signature:str, from_address: str):
+    """
+    returns all logs of a given event signature from an address
+    """
     approval_filter = await w3.eth.filter({
         "fromBlock":'earliest', 
         "toBlock":'latest',
@@ -32,18 +42,27 @@ async def get_all_logs_of_an_event_signature_of_address(event_signature:str, fro
     filtered_logs = await approval_filter.get_all_entries()
     return filtered_logs
 
-def get_erc20_contract(contract_address: str) -> AsyncContract:
+def _get_erc20_contract(contract_address: str) -> AsyncContract:
+    """
+    return the erc20 contract of an address
+    """
     return w3.eth.contract(address=contract_address, abi=erc20_abi)
 
-async def get_contract_name(contract: AsyncContract) -> str:
+async def _get_contract_name(contract: AsyncContract) -> str:
+    """
+    given a contract gets its name, if exists
+    """
     return await contract.functions.name().call()
 
 async def fetch_contract_names(contract_addresses: Set[str]) -> None:
+    """
+    updates the contract name map with the contract addresses names
+    """
     
     async def fetch_name(address: str):
         try:
-            contract = get_erc20_contract(address)
-            name = await get_contract_name(contract)
+            contract = _get_erc20_contract(address)
+            name = await _get_contract_name(contract)
             contract_name_map[address] = name
         except Exception as e:
             contract_name_map[address] = address  # fallback - name isn't mandatory on
