@@ -20,11 +20,19 @@ def _is_valid_data(log_data: str) -> bool:
         logger.error(f"couldn't retreive data, exception: {e}")
         return False
 
-def _is_log_more_recent(candidate_block_number: str, candidate_log_index: str, existing_block: str, existing_index: str):
+def _is_log_more_recent(candidate_log: str, existing_log: str):
     """
     given two logs, check whether the candidate is newer than the existing one
     """
-    return (candidate_block_number > existing_block) or (candidate_block_number == existing_block and candidate_log_index > existing_index)
+    candidate_block_number = candidate_log.get("blockNumber", 0)
+    candidate_transaction_index = candidate_log.get("transactionIndex")
+    candidate_log_index = candidate_log.get("logIndex", 0)
+    existing_block = existing_log.get("blockNumber", 0)
+    existing_transaction_index = candidate_log.get("transactionIndex")
+    existing_log_index = existing_log.get("logIndex", 0)
+    return (candidate_block_number > existing_block) or \
+        (candidate_block_number == existing_block and candidate_transaction_index > existing_transaction_index) or \
+        (candidate_block_number == existing_block and candidate_transaction_index == existing_transaction_index and candidate_log_index > existing_log_index)
 
 def _get_most_recent_approvals(logs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
@@ -35,18 +43,12 @@ def _get_most_recent_approvals(logs: List[Dict[str, Any]]) -> List[Dict[str, Any
         try:
             token = log["address"].lower()
             spender = web3_utils.get_erc20_spender(log)
-            block_number = log.get("blockNumber", 0)
-            log_index = log.get("logIndex", 0)
-            
             key = (spender, token)
-            
             if key not in latest_logs:
                 latest_logs[key] = log
             else:
                 existing_log = latest_logs[key]
-                existing_block = existing_log.get("blockNumber", 0)
-                existing_index = existing_log.get("logIndex", 0)
-                if _is_valid_data(log["data"]) and _is_log_more_recent(block_number, log_index, existing_block, existing_index):
+                if _is_valid_data(log["data"]) and _is_log_more_recent(candidate_log=log, existing_log=existing_log):
                     latest_logs[key] = log
         except (IndexError, AttributeError, KeyError) as e:
             logger.error(f"error during log processing: {e}")
