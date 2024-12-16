@@ -20,7 +20,6 @@ class PriceEnricher():
         given a list of missing addresses prices, perpare a request for gecko API
         """
         con_addresses = ",".join(missing_addresses)
-        logging.error(f"url: {self.__template_enrich_url.format(con_addresses)}")
         return self.__template_enrich_url.format(con_addresses)
 
     async def _fetch_tokens_prices(self, token_addresses: List[str]):

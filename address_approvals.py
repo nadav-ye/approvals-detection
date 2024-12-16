@@ -1,10 +1,12 @@
 from web3 import Web3
 from typing import Dict, List, Tuple, Any
 
+import logging
 import web3_utils
 
 
 approval_event_signature = "0x" + Web3.keccak(text="Approval(address,address,uint256)").hex()
+logger = logging.getLogger(__name__)
 
 
 def _is_valid_data(log_data: str) -> bool:
@@ -15,7 +17,7 @@ def _is_valid_data(log_data: str) -> bool:
         int(log_data.hex(), 16)
         return True
     except Exception as e:
-        print(f"couldn't retreive data, exception: {e}")
+        logger.error(f"couldn't retreive data, exception: {e}")
         return False
 
 def _is_log_more_recent(candidate_block_number: str, candidate_log_index: str, existing_block: str, existing_index: str):
@@ -47,6 +49,7 @@ def _get_most_recent_approvals(logs: List[Dict[str, Any]]) -> List[Dict[str, Any
                 if _is_valid_data(log["data"]) and _is_log_more_recent(block_number, log_index, existing_block, existing_index):
                     latest_logs[key] = log
         except (IndexError, AttributeError, KeyError) as e:
+            logger.error(f"error during log processing: {e}")
             continue  # Skip potentially malformed logs
     return list(latest_logs.values())
 
