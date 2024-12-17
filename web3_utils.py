@@ -1,16 +1,22 @@
 from web3 import AsyncWeb3
 from web3.contract.async_contract import AsyncContract
 from typing import Set, Dict, Any
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception,
+)
+
 import json
-import asyncio
+import logging
 
 
 infura_api_key = "ee139a7e573e401c968e84cb8d8342a6"
 w3 = AsyncWeb3(AsyncWeb3.AsyncHTTPProvider(f'https://mainnet.infura.io/v3/{infura_api_key}'))
-
+logger = logging.getLogger(__name__)
 with open("erc20_basic_abi.json") as abi:
     erc20_abi = json.load(abi)
-
 contract_name_map:Dict = dict()
 
 
@@ -29,6 +35,15 @@ def get_erc20_spender(log: Dict[str, Any]) -> str:
     spender_topic = log["topics"][2]
     return "0x" + spender_topic.hex()[26:]  # represented 20 bytes
 
+def _is_429_exception(exception: Exception):
+    return '429' in str(exception)
+
+@retry(
+    retry=retry_if_exception(_is_429_exception),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    stop=stop_after_attempt(2),
+    reraise=True
+)
 async def get_all_logs_of_an_event_signature_of_address(event_signature:str, from_address: str):
     """
     returns all logs of a given event signature from an address
@@ -54,6 +69,12 @@ async def _get_contract_name(contract: AsyncContract) -> str:
     """
     return await contract.functions.name().call()
 
+@retry(
+    retry=retry_if_exception(_is_429_exception),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    stop=stop_after_attempt(2),
+    reraise=True
+)
 async def fetch_contract_names(contract_addresses: Set[str]) -> None:
     """
     updates the contract name map with the contract addresses names
@@ -65,8 +86,10 @@ async def fetch_contract_names(contract_addresses: Set[str]) -> None:
             name = await _get_contract_name(contract)
             contract_name_map[address] = name
         except Exception as e:
-            contract_name_map[address] = address  # fallback - name isn't mandatory on
+            logger.error(f"failed to fetch name for address {address}, error details: {e}")
+            contract_name_map[address] = address  # fallback - name isn't mandatory; in case that it exist but raised a 429 error, the address would be a placeholder
+            raise e
 
     addresses_for_name_request = contract_addresses - contract_name_map.keys()
-    tasks = [fetch_name(address) for address in addresses_for_name_request]
-    await asyncio.gather(*tasks)
+    for address_for_request in addresses_for_name_request:
+        await fetch_name(address_for_request)
