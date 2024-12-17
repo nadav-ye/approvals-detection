@@ -4,6 +4,7 @@ from fastapi import HTTPException
 import httpx
 import logging
 
+logger = logging.getLogger(__name__)
 
 class PriceEnricher():
     """
@@ -32,16 +33,8 @@ class PriceEnricher():
                 response = await client.get(request_url, headers=self.__gecko_headers)
                 response.raise_for_status()
                 return response.json()
-            except httpx.HTTPStatusError as exc:
-                raise HTTPException(
-                    status_code=exc.response.status_code,
-                    detail=f"Error fetching data from CoinGecko: {exc.response.text}"
-                )
-            except httpx.RequestError as exc:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"An error occurred while requesting {exc.request.url!r}."
-                )
+            except Exception as e:
+                logger.error(f"failed to fetch price from gecko with error: {e}")
 
     async def get_tokens_prices(self, token_addresses: List[str]) -> Dict[str, Dict[str, Any]]:
         """

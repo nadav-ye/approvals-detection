@@ -17,7 +17,7 @@ def _is_valid_data(log_data: str) -> bool:
         int(log_data.hex(), 16)
         return True
     except Exception as e:
-        logger.error(f"couldn't retreive data, exception: {e}")
+        logger.error(f"couldn't retreive data field from log, exception: {e}")
         return False
 
 def _is_log_more_recent(candidate_log: str, existing_log: str):
@@ -25,10 +25,10 @@ def _is_log_more_recent(candidate_log: str, existing_log: str):
     given two logs, check whether the candidate is newer than the existing one
     """
     candidate_block_number = candidate_log.get("blockNumber", 0)
-    candidate_transaction_index = candidate_log.get("transactionIndex")
+    candidate_transaction_index = candidate_log.get("transactionIndex", 0)
     candidate_log_index = candidate_log.get("logIndex", 0)
     existing_block = existing_log.get("blockNumber", 0)
-    existing_transaction_index = candidate_log.get("transactionIndex")
+    existing_transaction_index = candidate_log.get("transactionIndex", 0)
     existing_log_index = existing_log.get("logIndex", 0)
     return (candidate_block_number > existing_block) or \
         (candidate_block_number == existing_block and candidate_transaction_index > existing_transaction_index) or \
@@ -50,7 +50,7 @@ def _get_most_recent_approvals(logs: List[Dict[str, Any]]) -> List[Dict[str, Any
                 existing_log = latest_logs[key]
                 if _is_valid_data(log["data"]) and _is_log_more_recent(candidate_log=log, existing_log=existing_log):
                     latest_logs[key] = log
-        except (IndexError, AttributeError, KeyError) as e:
+        except Exception as e:
             logger.error(f"error during log processing: {e}")
             continue  # Skip potentially malformed logs
     return list(latest_logs.values())
