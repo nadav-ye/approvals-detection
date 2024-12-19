@@ -45,7 +45,7 @@ async def _enrich_prices(response: Dict[str, List[approvals_dto.ApprovalDTO]]) -
             dto.price = token_prices.get(dto.token_address, None)
 
 
-@app.post("/get_approvals")
+@app.post("/get_approvals", response_model_exclude_none=True)
 async def get_approvals(request: ApprovalsRequest) -> Dict[str, Any]:
     """
     an entry point for a list of addresses, returning their most recent approvals per token and a spender
